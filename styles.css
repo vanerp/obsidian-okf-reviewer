@@ -1,0 +1,276 @@
+/* OKF Reviewer side panel */
+
+.okf-reviewer-panel {
+	padding: 0;
+}
+
+.okf-reviewer-panel .okf-reviewer-header {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	align-items: center;
+	padding: 10px 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.okf-reviewer-panel .okf-reviewer-header span {
+	display: inline-flex;
+	align-items: center;
+	border-radius: var(--radius-s);
+	padding: 2px 8px;
+	font-size: var(--font-ui-smaller);
+	font-weight: 600;
+	line-height: 1.4;
+	width: fit-content;
+}
+
+.okf-reviewer-panel .okf-reviewer-tier-ok {
+	background: rgba(var(--color-green-rgb), 0.15);
+	color: var(--color-green);
+}
+
+.okf-reviewer-panel .okf-reviewer-tier-mid {
+	background: rgba(var(--color-blue-rgb), 0.15);
+	color: var(--color-blue);
+}
+
+.okf-reviewer-panel .okf-reviewer-tier-none {
+	background: var(--background-modifier-hover);
+	color: var(--text-muted);
+}
+
+.okf-reviewer-panel .okf-reviewer-tier-due {
+	background: rgba(var(--color-red-rgb), 0.15);
+	color: var(--color-red);
+}
+
+.okf-reviewer-panel .okf-reviewer-section {
+	padding: 10px 12px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.okf-reviewer-panel .okf-reviewer-section:first-of-type {
+	border-top: none;
+}
+
+.okf-reviewer-panel .okf-reviewer-heading {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	margin-bottom: 6px;
+}
+
+.okf-reviewer-panel .setting-item {
+	flex-wrap: wrap;
+	border-top: none;
+	padding: 4px 0;
+	background: transparent;
+}
+
+.okf-reviewer-panel .setting-item-info {
+	flex: 1 1 100%;
+	margin-bottom: 0;
+}
+
+.okf-reviewer-panel .setting-item-info:has(.setting-item-name:not(:empty)),
+.okf-reviewer-panel .setting-item-info:has(.setting-item-description:not(:empty)) {
+	margin-bottom: 6px;
+}
+
+.okf-reviewer-panel .setting-item-name:empty,
+.okf-reviewer-panel .setting-item-description:empty {
+	display: none;
+}
+
+.okf-reviewer-panel .setting-item-name {
+	font-size: var(--font-ui-small);
+	font-weight: 600;
+}
+
+.okf-reviewer-panel .setting-item-description {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
+.okf-reviewer-panel .setting-item-control {
+	flex: 1 1 auto;
+	gap: 6px;
+	justify-content: flex-start;
+}
+
+.okf-reviewer-panel .setting-item-control input[type='text'] {
+	width: 100%;
+	max-width: 160px;
+}
+
+.okf-reviewer-panel .okf-reviewer-status-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+}
+
+.okf-reviewer-panel .okf-reviewer-pill-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px;
+	margin-top: 6px;
+}
+
+.okf-reviewer-panel .okf-reviewer-pill {
+	height: auto;
+	padding: 2px 10px;
+	border-radius: var(--radius-l, 999px);
+	font-size: var(--font-ui-smaller);
+	font-weight: 500;
+	box-shadow: none;
+}
+
+.okf-reviewer-panel .okf-reviewer-status-active,
+.okf-reviewer-panel .okf-reviewer-status-active:hover,
+.okf-reviewer-panel .okf-reviewer-status-active:disabled {
+	background: rgba(var(--color-green-rgb), 0.15);
+	color: var(--color-green);
+	box-shadow: none;
+	opacity: 1;
+	cursor: default;
+}
+
+.okf-reviewer-panel .okf-reviewer-muted {
+	color: var(--text-muted);
+	font-style: italic;
+	padding: 4px 0;
+}
+
+/* Verification event rows */
+.okf-reviewer-panel .okf-reviewer-events {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin-bottom: 8px;
+}
+
+.okf-reviewer-panel .okf-reviewer-event {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 4px 6px;
+	border-radius: var(--radius-s);
+}
+
+.okf-reviewer-panel .okf-reviewer-event:hover {
+	background: var(--background-modifier-hover);
+}
+
+.okf-reviewer-panel .okf-reviewer-event-text {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	overflow-wrap: anywhere;
+	min-width: 0;
+}
+
+.okf-reviewer-panel .okf-reviewer-event-name-row {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.okf-reviewer-panel .okf-reviewer-event-name {
+	font-size: var(--font-ui-small);
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+.okf-reviewer-panel .okf-reviewer-event-badge {
+	display: inline-flex;
+	align-items: center;
+	border-radius: var(--radius-s);
+	padding: 1px 6px;
+	font-size: var(--font-ui-smaller);
+	font-weight: 600;
+	line-height: 1.4;
+	background: rgba(var(--color-green-rgb), 0.15);
+	color: var(--color-green);
+}
+
+.okf-reviewer-panel .okf-reviewer-event-date {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
+.okf-reviewer-panel .okf-reviewer-icon-button {
+	flex: 0 0 auto;
+	background: transparent;
+	box-shadow: none;
+	border: none;
+	padding: 2px 4px;
+	color: var(--text-muted);
+}
+
+.okf-reviewer-panel .okf-reviewer-icon-button:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+
+.okf-reviewer-panel .okf-reviewer-inactive {
+	margin: 16px 12px;
+	padding: 12px;
+	border-radius: var(--radius-s);
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+/* File explorer markers: up to three small solid dots in order — generated
+   (authorship), verified (review tier), stale (due for review, shown only
+   when true). Human is green, machine is blue, stale is always red. */
+.okf-reviewer-badges {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin-left: 6px;
+	/* nav-file-title is a flex row, so vertical-align (inline contexts) is
+	   ignored there — align-self is what actually pins this to the text
+	   baseline instead of the row's vertical center; vertical-align stays
+	   as a fallback for non-flex contexts. */
+	vertical-align: baseline;
+	align-self: baseline;
+}
+
+.okf-reviewer-dot {
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	box-sizing: border-box;
+	flex: 0 0 auto;
+}
+
+.okf-reviewer-dot-origin-human,
+.okf-reviewer-dot-tier-human {
+	background-color: var(--color-green);
+}
+
+.okf-reviewer-dot-origin-machine,
+.okf-reviewer-dot-tier-machine {
+	background-color: var(--color-blue);
+}
+
+.okf-reviewer-dot-stale {
+	background-color: var(--color-red);
+}
+
+/* One of generated/verified is known but the other isn't: the unknown one
+   still renders as an open ring instead of vanishing, so the three-slot
+   order stays legible. */
+.okf-reviewer-dot-origin-unknown,
+.okf-reviewer-dot-tier-unknown {
+	border: 1px solid var(--text-faint);
+	background-color: transparent;
+}
