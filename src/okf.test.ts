@@ -86,6 +86,10 @@ describe('readReviewState', () => {
 		expect(state.status).toBeNull();
 		expect(state.staleAfter).toBeNull();
 	});
+
+	it('maps list-valued status to null so decoration cannot fire', () => {
+		expect(readReviewState({ status: ['draft'] }).status).toBeNull();
+	});
 });
 
 describe('humanReviewed / reviewTier', () => {
@@ -201,6 +205,46 @@ describe('frontmatter mutation builders', () => {
 		appendVerifiedEvent(fm, { by: 'b', at: 'y' });
 		expect(fm['verified']).toEqual([
 			{ by: 'a', at: 'x' },
+			{ by: 'b', at: 'y' },
+		]);
+	});
+
+	it('appendVerifiedEvent overwrites the object form in place for the same actor', () => {
+		const fm: Record<string, unknown> = { verified: { by: 'human:t', at: 'old' } };
+		appendVerifiedEvent(fm, { by: 'human:t', at: 'new' });
+		expect(fm['verified']).toEqual({ by: 'human:t', at: 'new' });
+	});
+
+	it('appendVerifiedEvent overwrites the matching array entry in place for the same actor', () => {
+		const fm: Record<string, unknown> = {
+			verified: [
+				{ by: 'a', at: 'x' },
+				{ by: 'human:t', at: 'old' },
+				{ by: 'b', at: 'y' },
+			],
+		};
+		appendVerifiedEvent(fm, { by: 'human:t', at: 'new' });
+		expect(fm['verified']).toEqual([
+			{ by: 'a', at: 'x' },
+			{ by: 'human:t', at: 'new' },
+			{ by: 'b', at: 'y' },
+		]);
+	});
+
+	it('appendVerifiedEvent collapses multiple duplicate entries from the same actor into one', () => {
+		const fm: Record<string, unknown> = {
+			verified: [
+				{ by: 'a', at: 'x' },
+				{ by: 'human:t', at: 'old1' },
+				{ by: 'human:t', at: 'old2' },
+				{ by: 'b', at: 'y' },
+				{ by: 'human:t', at: 'old3' },
+			],
+		};
+		appendVerifiedEvent(fm, { by: 'human:t', at: 'new' });
+		expect(fm['verified']).toEqual([
+			{ by: 'a', at: 'x' },
+			{ by: 'human:t', at: 'new' },
 			{ by: 'b', at: 'y' },
 		]);
 	});

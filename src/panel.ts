@@ -184,13 +184,8 @@ export class ReviewPanelView extends ItemView {
 	): void {
 		const section = contentEl.createDiv('okf-reviewer-section');
 		this.renderSectionHeading(section, 'Status');
-		// Defaults pre-fill only unreviewed documents (spec Assumptions; FR-011).
 		const active: OkfStatus | null =
-			state.status !== null && isKnownStatus(state.status)
-				? state.status
-				: state.events.length === 0
-					? this.plugin.settings.defaultStatus
-					: null;
+			state.status !== null && isKnownStatus(state.status) ? state.status : null;
 
 		const row = section.createDiv('okf-reviewer-status-row');
 		for (const status of OKF_STATUSES) {
@@ -222,28 +217,22 @@ export class ReviewPanelView extends ItemView {
 		const section = contentEl.createDiv('okf-reviewer-section');
 		this.renderSectionHeading(section, 'Stale after');
 		const stale = state.staleAfter;
-		const prefill = isValidStaleDate(stale)
-			? stale
-			: state.events.length === 0
-				? addDaysIso(this.plugin.settings.staleAfterDays)
-				: '';
+		const prefill = isValidStaleDate(stale) ? stale : '';
 		new Setting(section)
-			.setDesc('Absolute calendar date. A past date means the document is due for review.')
-			.addText((text) =>
-				text
-					.setPlaceholder('2026-12-31')
-					.setValue(prefill)
-					.onChange((value) => {
-						if (value.length === 0) {
-							void this.plugin.applyReview((fm) => clearStaleAfter(fm));
-							return;
-						}
-						// In-flight edits are not committed until the value is a complete date.
-						if (ISO_DATE_RE.test(value)) {
-							void this.plugin.applyReview((fm) => setStaleAfter(fm, value));
-						}
-					}),
-			)
+			.setDesc('A past date means the document is due for review. Or pick a preset below.')
+			.addText((text) => {
+				text.inputEl.type = 'date'; // native date picker; its value is already YYYY-MM-DD
+				return text.setValue(prefill).onChange((value) => {
+					if (value.length === 0) {
+						void this.plugin.applyReview((fm) => clearStaleAfter(fm));
+						return;
+					}
+					// In-flight edits are not committed until the value is a complete date.
+					if (ISO_DATE_RE.test(value)) {
+						void this.plugin.applyReview((fm) => setStaleAfter(fm, value));
+					}
+				});
+			})
 			.addButton((button) => {
 				button
 					.setIcon('eraser')

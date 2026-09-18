@@ -1,55 +1,104 @@
 import { describe, expect, it } from 'vitest';
-import { computeExplorerMarkers } from './markers';
+import { computeExplorerAppearance } from './markers';
 
-describe('computeExplorerMarkers', () => {
-	it('is empty when nothing is known and the document is not stale', () => {
-		expect(computeExplorerMarkers(null, null, false)).toEqual([]);
+describe('computeExplorerAppearance', () => {
+	it('shows neither text color nor a dot when nothing is known', () => {
+		expect(computeExplorerAppearance(null, null, false, null)).toEqual({
+			textModifier: null,
+			dot: null,
+			statusSuffix: null,
+			statusStrike: false,
+		});
 	});
 
-	it('shows only the origin dot when origin is known and tier/stale are not', () => {
-		expect(computeExplorerMarkers('human', null, false)).toEqual([
-			{ modifier: 'origin-human', label: 'Human-authored' },
-			{ modifier: 'tier-unknown', label: 'Not yet verified' },
-		]);
+	it('text color follows origin regardless of tier/stale', () => {
+		expect(computeExplorerAppearance('human', null, false, null).textModifier).toBe('human');
+		expect(computeExplorerAppearance('machine', null, false, null).textModifier).toBe('machine');
+		expect(computeExplorerAppearance(null, 'human', false, null).textModifier).toBeNull();
 	});
 
-	it('shows only the tier dot when tier is known and origin/stale are not', () => {
-		expect(computeExplorerMarkers(null, 'machine', false)).toEqual([
-			{ modifier: 'origin-unknown', label: 'Authorship unknown' },
-			{ modifier: 'tier-machine', label: 'Machine-confirmed' },
-		]);
+	it('dot follows verification tier when known and not stale', () => {
+		expect(computeExplorerAppearance(null, 'human', false, null).dot).toEqual({
+			modifier: 'tier-human',
+			label: 'Human-reviewed',
+		});
+		expect(computeExplorerAppearance('human', 'machine', false, null).dot).toEqual({
+			modifier: 'tier-machine',
+			label: 'Machine-confirmed',
+		});
 	});
 
-	it('shows both dots, each solid, when origin and tier are both known', () => {
-		expect(computeExplorerMarkers('human', 'machine', false)).toEqual([
-			{ modifier: 'origin-human', label: 'Human-authored' },
-			{ modifier: 'tier-machine', label: 'Machine-confirmed' },
-		]);
+	it('has no dot when unverified and not stale, independent of origin', () => {
+		expect(computeExplorerAppearance('human', null, false, null).dot).toBeNull();
+		expect(computeExplorerAppearance(null, null, false, null).dot).toBeNull();
 	});
 
-	it('shows both dots solid the same color when origin and tier agree', () => {
-		expect(computeExplorerMarkers('machine', 'machine', false)).toEqual([
-			{ modifier: 'origin-machine', label: 'Machine-authored' },
-			{ modifier: 'tier-machine', label: 'Machine-confirmed' },
-		]);
+	it('stale overrides the dot to red even when a tier is known', () => {
+		expect(computeExplorerAppearance('human', 'human', true, null).dot).toEqual({
+			modifier: 'stale',
+			label: 'Due for review',
+		});
 	});
 
-	it('appends the stale dot last, after origin and tier', () => {
-		expect(computeExplorerMarkers('human', 'human', true)).toEqual([
-			{ modifier: 'origin-human', label: 'Human-authored' },
-			{ modifier: 'tier-human', label: 'Human-reviewed' },
-			{ modifier: 'stale', label: 'Due for review' },
-		]);
+	it('stale still shows a dot when there is no verification tier at all', () => {
+		expect(computeExplorerAppearance(null, null, true, null).dot).toEqual({
+			modifier: 'stale',
+			label: 'Due for review',
+		});
 	});
 
-	it('shows only the stale dot when neither origin nor tier is known', () => {
-		expect(computeExplorerMarkers(null, null, true)).toEqual([
-			{ modifier: 'stale', label: 'Due for review' },
-		]);
+	it('stale never affects the text color', () => {
+		expect(computeExplorerAppearance('machine', 'human', true, null).textModifier).toBe('machine');
+		expect(computeExplorerAppearance(null, 'human', true, null).textModifier).toBeNull();
 	});
 
-	it('never adds an unknown placeholder purely because of staleness', () => {
-		const markers = computeExplorerMarkers(null, null, true);
-		expect(markers.some((m) => m.modifier.endsWith('-unknown'))).toBe(false);
+	it('draft notes get a [DRAFT] suffix and no strike', () => {
+		expect(computeExplorerAppearance(null, null, false, 'draft')).toEqual({
+			textModifier: null,
+			dot: null,
+			statusSuffix: '[DRAFT]',
+			statusStrike: false,
+		});
+	});
+
+	it('deprecated notes get a strike and no suffix', () => {
+		expect(computeExplorerAppearance(null, null, false, 'deprecated')).toEqual({
+			textModifier: null,
+			dot: null,
+			statusSuffix: null,
+			statusStrike: true,
+		});
+	});
+
+	it('stable notes stay undecorated', () => {
+		expect(computeExplorerAppearance(null, null, false, 'stable')).toEqual({
+			textModifier: null,
+			dot: null,
+			statusSuffix: null,
+			statusStrike: false,
+		});
+	});
+
+	it('status signals are independent of origin, tier, and stale', () => {
+		// machine-authored, human-verified, stale, draft: all signals at once
+		expect(computeExplorerAppearance('machine', 'human', true, 'draft')).toEqual({
+			textModifier: 'machine',
+			dot: { modifier: 'stale', label: 'Due for review' },
+			statusSuffix: '[DRAFT]',
+			statusStrike: false,
+		});
+		// deprecated keeps color and dot while striking through
+		expect(computeExplorerAppearance('machine', 'machine', false, 'deprecated')).toEqual({
+			textModifier: 'machine',
+			dot: { modifier: 'tier-machine', label: 'Machine-confirmed' },
+			statusSuffix: null,
+			statusStrike: true,
+		});
+		// status never affects the existing signals
+		expect(computeExplorerAppearance('human', 'human', false, 'draft').textModifier).toBe('human');
+		expect(computeExplorerAppearance('human', 'human', false, 'draft').dot).toEqual({
+			modifier: 'tier-human',
+			label: 'Human-reviewed',
+		});
 	});
 });

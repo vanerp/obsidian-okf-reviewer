@@ -139,24 +139,49 @@ export function addDaysIso(days: number, from: Date = new Date()): string {
 
 // --- Frontmatter mutation builders (contracts/frontmatter.md write table) ---
 
-/** Append a verification event, preserving existing raw entries (FR-006). */
+/**
+ * Append a verification event, preserving existing raw entries from other
+ * actors — except that every existing event from the same actor (`by`),
+ * including any accumulated duplicates, is collapsed into this one fresh
+ * record (kept at the first match's position) rather than appended
+ * alongside them.
+ */
 export function appendVerifiedEvent(
 	fm: Record<string, unknown>,
 	event: VerifiedEvent & { by: string; at: string },
 ): void {
 	const raw = fm['verified'];
 	const entry = { by: event.by, at: event.at };
+
 	if (raw === undefined || raw === null) {
 		fm['verified'] = entry; // object form for the first event
-	} else if (Array.isArray(raw)) {
-		const entries = raw as unknown[];
-		fm['verified'] = [...entries, entry];
-	} else if (isRecord(raw)) {
-		fm['verified'] = [raw, entry];
-	} else {
-		// Invalid scalar: explicit user action replaces it (read contract note).
-		fm['verified'] = entry;
+		return;
 	}
+
+	if (isRecord(raw)) {
+		fm['verified'] = raw['by'] === event.by ? entry : [raw, entry];
+		return;
+	}
+
+	if (Array.isArray(raw)) {
+		const entries = raw as unknown[];
+		const firstIndex = entries.findIndex((e) => isRecord(e) && e['by'] === event.by);
+		if (firstIndex === -1) {
+			fm['verified'] = [...entries, entry];
+			return;
+		}
+		// Every entry before the first match is from a different actor (by
+		// definition of "first"), so it survives filtering untouched — the
+		// first match's index in the original array is therefore still valid
+		// as the insertion point in the deduped array.
+		const deduped = entries.filter((e) => !(isRecord(e) && e['by'] === event.by));
+		deduped.splice(firstIndex, 0, entry);
+		fm['verified'] = deduped;
+		return;
+	}
+
+	// Invalid scalar: explicit user action replaces it (read contract note).
+	fm['verified'] = entry;
 }
 
 /** Remove exactly the event matching by+at; field removed when none remain (FR-017). */

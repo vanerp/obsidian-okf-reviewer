@@ -1,17 +1,23 @@
-// Pure file-explorer marker logic — no Obsidian imports, so it's unit-testable
-// independent of the DOM/plugin glue in explorer.ts.
+// Pure file-explorer appearance logic — no Obsidian imports, so it's
+// unit-testable independent of the DOM/plugin glue in explorer.ts.
 
-import type { Origin, Tier } from './okf';
+import type { OkfStatus, Origin, Tier } from './okf';
 
-export interface ExplorerMarker {
+export interface ExplorerDot {
 	modifier: string;
 	label: string;
 }
 
-const ORIGIN_LABEL: Record<Origin, string> = {
-	human: 'Human-authored',
-	machine: 'Machine-authored',
-};
+export interface ExplorerAppearance {
+	/** Text color for the entry: authorship (`generated.by`), or null if unknown. */
+	textModifier: Origin | null;
+	/** Single trailing dot: verification status, or null if unverified and not stale. */
+	dot: ExplorerDot | null;
+	/** Label suffix for draft status, or null. */
+	statusSuffix: '[DRAFT]' | null;
+	/** Strikethrough style on the label for deprecated notes. */
+	statusStrike: boolean;
+}
 
 const TIER_LABEL: Record<Tier, string> = {
 	human: 'Human-reviewed',
@@ -19,40 +25,35 @@ const TIER_LABEL: Record<Tier, string> = {
 };
 
 const STALE_LABEL = 'Due for review';
-const ORIGIN_UNKNOWN_LABEL = 'Authorship unknown';
-const TIER_UNKNOWN_LABEL = 'Not yet verified';
+
+const DRAFT_SUFFIX = '[DRAFT]';
 
 /**
- * Fixed three-slot order for the file-explorer marker row: generated
- * (authorship), verified (review tier), then stale. Each of generated/
- * verified renders solid when known; if one is unknown but the other is
- * known, it renders as an open/grey placeholder instead of vanishing, so
- * the slot order stays legible. Stale never gets a placeholder — it's
- * either present (red) or entirely absent, and it never triggers a
- * placeholder for the other two slots.
+ * File-explorer appearance for an OKF document: the entry's text color
+ * expresses authorship/provenance (`generated.by` — see `originTier`), a
+ * single trailing dot expresses verification status (review tier),
+ * overridden to a red "stale" dot when the document is due for review, and
+ * the lifecycle status adds a `[DRAFT]` suffix (draft) or a strikethrough
+ * (deprecated) — stable and unknown states stay plain. All signals are
+ * independent — any can be present without the others.
  */
-export function computeExplorerMarkers(
+export function computeExplorerAppearance(
 	origin: Origin | null,
 	tier: Tier | null,
 	stale: boolean,
-): ExplorerMarker[] {
-	const markers: ExplorerMarker[] = [];
-
-	if (origin !== null) {
-		markers.push({ modifier: `origin-${origin}`, label: ORIGIN_LABEL[origin] });
-	} else if (tier !== null) {
-		markers.push({ modifier: 'origin-unknown', label: ORIGIN_UNKNOWN_LABEL });
-	}
-
-	if (tier !== null) {
-		markers.push({ modifier: `tier-${tier}`, label: TIER_LABEL[tier] });
-	} else if (origin !== null) {
-		markers.push({ modifier: 'tier-unknown', label: TIER_UNKNOWN_LABEL });
-	}
-
+	status: OkfStatus | null,
+): ExplorerAppearance {
+	let dot: ExplorerDot | null = null;
 	if (stale) {
-		markers.push({ modifier: 'stale', label: STALE_LABEL });
+		dot = { modifier: 'stale', label: STALE_LABEL };
+	} else if (tier !== null) {
+		dot = { modifier: `tier-${tier}`, label: TIER_LABEL[tier] };
 	}
 
-	return markers;
+	return {
+		textModifier: origin,
+		dot,
+		statusSuffix: status === 'draft' ? DRAFT_SUFFIX : null,
+		statusStrike: status === 'deprecated',
+	};
 }

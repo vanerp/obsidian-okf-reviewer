@@ -11,7 +11,9 @@ import {
 export default class OkfReviewerPlugin extends Plugin {
 	settings: ReviewerSettings = { ...DEFAULT_SETTINGS };
 	private readonly explorerDecorator = new ExplorerDecorator(this);
-	private lastOpenedFilePath: string | null = null;
+	// undefined = "never checked yet", distinct from null ("no active file"),
+	// so the very first refreshPanel call always runs once.
+	private lastActiveFilePath: string | null | undefined = undefined;
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -58,6 +60,7 @@ export default class OkfReviewerPlugin extends Plugin {
 		);
 
 		this.app.workspace.onLayoutReady(() => {
+			this.dedupePanelLeaves();
 			void this.refreshPanel();
 			this.explorerDecorator.refreshAll();
 		});
@@ -80,23 +83,32 @@ export default class OkfReviewerPlugin extends Plugin {
 
 	async refreshPanel(): Promise<void> {
 		const file = this.activeFile();
+		const path = file?.path ?? null;
+		if (path === this.lastActiveFilePath) {
+			// Nothing actually changed — most commonly, the panel itself just
+			// gained focus (e.g. the user clicking a button in it), which fires
+			// active-leaf-change for the same file. Re-rendering here would
+			// wipe and rebuild the panel's DOM mid-click, eating that click
+			// before its own handler ever fires.
+			return;
+		}
+		// Set before awaiting: active-leaf-change, layout-change, and
+		// onLayoutReady can all fire for the same file in the same tick (e.g.
+		// on startup), and without this the guard above doesn't close until
+		// openPanel resolves — letting concurrent calls race past it and each
+		// create their own panel leaf.
+		this.lastActiveFilePath = path;
+
 		const cache = file ? this.app.metadataCache.getFileCache(file) : null;
 		const isOkf = cache?.frontmatter !== undefined && isOkfDocument(cache.frontmatter);
 		if (isOkf && file) {
-			// Only force-open/reveal the panel when the active OKF file actually
-			// changes — not on every leaf-activation for the file already shown,
-			// which would otherwise steal focus back from the editor on every click.
-			if (file.path !== this.lastOpenedFilePath) {
-				await this.openPanel(file);
-				this.lastOpenedFilePath = file.path;
-			}
-		} else {
-			this.lastOpenedFilePath = null;
+			await this.openPanel(file);
 		}
 		this.panelView()?.render();
 	}
 
 	private async openPanel(file: TFile): Promise<void> {
+		this.dedupePanelLeaves();
 		const existing = this.app.workspace
 			.getLeavesOfType(VIEW_TYPE_OKF_REVIEWER)
 			.first();
@@ -104,6 +116,15 @@ export default class OkfReviewerPlugin extends Plugin {
 		if (!leaf) return;
 		await leaf.setViewState({ type: VIEW_TYPE_OKF_REVIEWER, active: true });
 		await this.app.workspace.revealLeaf(leaf);
+	}
+
+	/** Keep at most one review-panel leaf, detaching any extras (self-heals
+	 *  duplicates from a past startup race, and guards against future ones). */
+	private dedupePanelLeaves(): void {
+		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_OKF_REVIEWER);
+		for (const extra of leaves.slice(1)) {
+			extra.detach();
+		}
 	}
 
 	/**
@@ -131,16 +152,6 @@ export default class OkfReviewerPlugin extends Plugin {
 			...DEFAULT_SETTINGS,
 			...(stored ?? {}),
 		};
-		if (
-			this.settings.defaultStatus !== 'draft' &&
-			this.settings.defaultStatus !== 'stable' &&
-			this.settings.defaultStatus !== 'deprecated'
-		) {
-			this.settings.defaultStatus = DEFAULT_SETTINGS.defaultStatus;
-		}
-		if (!Number.isFinite(this.settings.staleAfterDays) || this.settings.staleAfterDays < 0) {
-			this.settings.staleAfterDays = DEFAULT_SETTINGS.staleAfterDays;
-		}
 		if (this.settings.reviewerId.trim().length === 0) {
 			this.settings.reviewerId = DEFAULT_SETTINGS.reviewerId;
 		}

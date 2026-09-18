@@ -1,5 +1,34 @@
 /* OKF Reviewer side panel */
 
+/* Light/dark color schemes for the plugin's three status colors (human=green,
+   machine=blue, stale=red). Obsidian's own --color-green/-blue/-red are tuned
+   as accents, not for text-on-background contrast, and land too close to each
+   other in practice — these are picked to clear WCAG AA (4.5:1) against each
+   theme's actual background: darker/more saturated shades on light
+   backgrounds, lighter/desaturated shades on dark backgrounds. Defaults
+   (:root) match light mode; .theme-dark overrides for dark mode. */
+:root {
+	--okf-green: #158740;
+	--okf-green-rgb: 21, 135, 64;
+	--okf-blue: #1d4ed8;
+	--okf-blue-rgb: 29, 78, 216;
+	--okf-red: #b91c1c;
+	--okf-red-rgb: 185, 28, 28;
+	/* Lighter green for the explorer dot only (a filled UI dot only needs
+	   WCAG's 3:1 non-text minimum, not the 4.5:1 text needs elsewhere). */
+	--okf-green-dot: #1aa852;
+}
+
+.theme-dark {
+	--okf-green: #4ade80;
+	--okf-green-rgb: 74, 222, 128;
+	--okf-blue: #60a5fa;
+	--okf-blue-rgb: 96, 165, 250;
+	--okf-red: #f87171;
+	--okf-red-rgb: 248, 113, 113;
+	--okf-green-dot: var(--okf-green);
+}
+
 .okf-reviewer-panel {
 	padding: 0;
 }
@@ -25,13 +54,13 @@
 }
 
 .okf-reviewer-panel .okf-reviewer-tier-ok {
-	background: rgba(var(--color-green-rgb), 0.15);
-	color: var(--color-green);
+	background: rgba(var(--okf-green-rgb), 0.15);
+	color: var(--okf-green);
 }
 
 .okf-reviewer-panel .okf-reviewer-tier-mid {
-	background: rgba(var(--color-blue-rgb), 0.15);
-	color: var(--color-blue);
+	background: rgba(var(--okf-blue-rgb), 0.15);
+	color: var(--okf-blue);
 }
 
 .okf-reviewer-panel .okf-reviewer-tier-none {
@@ -40,8 +69,8 @@
 }
 
 .okf-reviewer-panel .okf-reviewer-tier-due {
-	background: rgba(var(--color-red-rgb), 0.15);
-	color: var(--color-red);
+	background: rgba(var(--okf-red-rgb), 0.15);
+	color: var(--okf-red);
 }
 
 .okf-reviewer-panel .okf-reviewer-section {
@@ -100,7 +129,8 @@
 	justify-content: flex-start;
 }
 
-.okf-reviewer-panel .setting-item-control input[type='text'] {
+.okf-reviewer-panel .setting-item-control input[type='text'],
+.okf-reviewer-panel .setting-item-control input[type='date'] {
 	width: 100%;
 	max-width: 160px;
 }
@@ -132,8 +162,8 @@
 .okf-reviewer-panel .okf-reviewer-status-active,
 .okf-reviewer-panel .okf-reviewer-status-active:hover,
 .okf-reviewer-panel .okf-reviewer-status-active:disabled {
-	background: rgba(var(--color-green-rgb), 0.15);
-	color: var(--color-green);
+	background: rgba(var(--okf-green-rgb), 0.15);
+	color: var(--okf-green);
 	box-shadow: none;
 	opacity: 1;
 	cursor: default;
@@ -195,8 +225,8 @@
 	font-size: var(--font-ui-smaller);
 	font-weight: 600;
 	line-height: 1.4;
-	background: rgba(var(--color-green-rgb), 0.15);
-	color: var(--color-green);
+	background: rgba(var(--okf-green-rgb), 0.15);
+	color: var(--okf-green);
 }
 
 .okf-reviewer-panel .okf-reviewer-event-date {
@@ -227,14 +257,26 @@
 	font-size: var(--font-ui-smaller);
 }
 
-/* File explorer markers: up to three small solid dots in order — generated
-   (authorship), verified (review tier), stale (due for review, shown only
-   when true). Human is green, machine is blue, stale is always red. */
-.okf-reviewer-badges {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
+/* File explorer: entry text color expresses authorship (generated.by), and
+   a single trailing dot expresses verification status, overridden to red
+   when the document is stale. Human is green, machine is blue, stale is
+   always red, regardless of which slot it's in. */
+.okf-reviewer-text-human {
+	color: var(--okf-green);
+}
+
+.okf-reviewer-text-machine {
+	color: var(--okf-blue);
+}
+
+.okf-reviewer-dot {
+	display: inline-block;
+	width: 6px;
+	height: 6px;
 	margin-left: 6px;
+	border-radius: 50%;
+	box-sizing: border-box;
+	flex: 0 0 auto;
 	/* nav-file-title is a flex row, so vertical-align (inline contexts) is
 	   ignored there — align-self is what actually pins this to the text
 	   baseline instead of the row's vertical center; vertical-align stays
@@ -243,34 +285,27 @@
 	align-self: baseline;
 }
 
-.okf-reviewer-dot {
-	display: inline-block;
-	width: 6px;
-	height: 6px;
-	border-radius: 50%;
-	box-sizing: border-box;
-	flex: 0 0 auto;
-}
-
-.okf-reviewer-dot-origin-human,
 .okf-reviewer-dot-tier-human {
-	background-color: var(--color-green);
+	background-color: var(--okf-green-dot);
 }
 
-.okf-reviewer-dot-origin-machine,
 .okf-reviewer-dot-tier-machine {
-	background-color: var(--color-blue);
+	background-color: var(--okf-blue);
 }
 
 .okf-reviewer-dot-stale {
-	background-color: var(--color-red);
+	background-color: var(--okf-red);
 }
 
-/* One of generated/verified is known but the other isn't: the unknown one
-   still renders as an open ring instead of vanishing, so the three-slot
-   order stays legible. */
-.okf-reviewer-dot-origin-unknown,
-.okf-reviewer-dot-tier-unknown {
-	border: 1px solid var(--text-faint);
-	background-color: transparent;
+/* Status layer: the lifecycle status decorates the label text itself.
+   The strikethrough inherits the entry's current text color (theme-agnostic
+   by construction, and composes with the authorship colors above); the
+   [DRAFT] suffix is slightly muted to read as decoration, not file name. */
+.okf-reviewer-strike {
+	text-decoration: line-through;
+}
+
+.okf-reviewer-suffix {
+	opacity: 0.6;
+	margin-left: 4px;
 }
