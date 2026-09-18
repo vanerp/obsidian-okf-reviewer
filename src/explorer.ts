@@ -22,9 +22,24 @@ const TEXT_CLASSES = [`${TEXT_CLASS_PREFIX}human`, `${TEXT_CLASS_PREFIX}machine`
 export class ExplorerDecorator {
 	constructor(private readonly plugin: OkfReviewerPlugin) {}
 
+	/**
+	 * Re-decorate every entry currently rendered in a file explorer. Driven by
+	 * the explorer's DOM rather than a vault-wide file listing: only rendered
+	 * entries can be decorated anyway.
+	 */
 	refreshAll(): void {
-		for (const file of this.plugin.app.vault.getMarkdownFiles()) {
-			this.refreshFile(file);
+		const paths = new Set<string>();
+		for (const leaf of this.plugin.app.workspace.getLeavesOfType(FILE_EXPLORER_VIEW_TYPE)) {
+			leaf.view.containerEl
+				.querySelectorAll<HTMLElement>('.nav-file-title[data-path]')
+				.forEach((el) => {
+					const path = el.dataset.path;
+					if (path?.endsWith('.md')) paths.add(path);
+				});
+		}
+		for (const path of paths) {
+			const file = this.plugin.app.vault.getFileByPath(path);
+			if (file) this.refreshFile(file);
 		}
 	}
 

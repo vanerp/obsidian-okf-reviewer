@@ -64,4 +64,4 @@ npm test         # vitest — unit tests for the pure frontmatter/marker logic
 
 ## License
 
-0BSD — see `package.json`.
+0BSD — see [`LICENSE`](LICENSE).

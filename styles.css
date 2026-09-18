@@ -103,8 +103,9 @@
 	margin-bottom: 0;
 }
 
-.okf-reviewer-panel .setting-item-info:has(.setting-item-name:not(:empty)),
-.okf-reviewer-panel .setting-item-info:has(.setting-item-description:not(:empty)) {
+/* Space below the label text only when there is any; avoids :has for performance. */
+.okf-reviewer-panel .setting-item-name:not(:empty),
+.okf-reviewer-panel .setting-item-description:not(:empty) {
 	margin-bottom: 6px;
 }
 
