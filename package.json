@@ -1,6 +1,6 @@
 {
 	"name": "okf-reviewer",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Review side panel for OKF documents in Obsidian",
 	"main": "main.js",
 	"type": "module",
