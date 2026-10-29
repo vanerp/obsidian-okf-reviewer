@@ -1,6 +1,6 @@
 import { ButtonComponent, ItemView, Notice, Setting, type TFile } from 'obsidian';
 import type OkfReviewerPlugin from './main';
-import { applyAttributes } from './attributes';
+import { applyAttributes, removeAttribute } from './attributes';
 import {
 	addDaysIso,
 	appendVerifiedEvent,
@@ -119,41 +119,42 @@ export class ReviewPanelView extends ItemView {
 
 		if (state.events.length === 0) {
 			section.createDiv('okf-reviewer-muted').setText('No verification events.');
-		}
-		const list = section.createDiv('okf-reviewer-events');
-		for (const event of state.events) {
-			const { by, at } = event;
-			const row = list.createDiv('okf-reviewer-event');
-			const text = row.createDiv('okf-reviewer-event-text');
-			const nameRow = text.createDiv('okf-reviewer-event-name-row');
-			const humanId =
-				by !== null && by.startsWith(HUMAN_ACTOR_PREFIX)
-					? by.slice(HUMAN_ACTOR_PREFIX.length)
-					: null;
-			nameRow.createSpan({
-				text: humanId ?? by ?? '(missing by)',
-				cls: 'okf-reviewer-event-name',
-			});
-			if (humanId !== null) {
-				nameRow.createSpan({ text: 'human', cls: 'okf-reviewer-event-badge' });
-			}
-			text.createSpan({
-				text: at !== null ? formatHumanDateTime(at) : '(missing at)',
-				cls: 'okf-reviewer-event-date',
-			});
-			const remove = new ButtonComponent(row)
-				.setIcon('trash-2')
-				.setTooltip('Remove this verification event');
-			remove.buttonEl.addClass('okf-reviewer-icon-button');
-			remove.onClick(() => {
-				if (by === null || at === null) {
-					new Notice(
-						'OKF Reviewer: event lacks `by`/`at`; edit the note by hand.',
-					);
-					return;
+		} else {
+			const list = section.createDiv('okf-reviewer-list');
+			for (const event of state.events) {
+				const { by, at } = event;
+				const row = list.createDiv('okf-reviewer-row');
+				const text = row.createDiv('okf-reviewer-event-text');
+				const nameRow = text.createDiv('okf-reviewer-event-name-row');
+				const humanId =
+					by !== null && by.startsWith(HUMAN_ACTOR_PREFIX)
+						? by.slice(HUMAN_ACTOR_PREFIX.length)
+						: null;
+				nameRow.createSpan({
+					text: humanId ?? by ?? '(missing by)',
+					cls: 'okf-reviewer-event-name',
+				});
+				if (humanId !== null) {
+					nameRow.createSpan({ text: 'human', cls: 'okf-reviewer-event-badge' });
 				}
-				void this.plugin.applyReview((fm) => removeVerifiedEvent(fm, by, at));
-			});
+				text.createSpan({
+					text: at !== null ? formatHumanDateTime(at) : '(missing at)',
+					cls: 'okf-reviewer-event-date',
+				});
+				const remove = new ButtonComponent(row)
+					.setIcon('trash-2')
+					.setTooltip('Remove this verification event');
+				remove.buttonEl.addClass('okf-reviewer-icon-button');
+				remove.onClick(() => {
+					if (by === null || at === null) {
+						new Notice(
+							'OKF Reviewer: event lacks `by`/`at`; edit the note by hand.',
+						);
+						return;
+					}
+					void this.plugin.applyReview((fm) => removeVerifiedEvent(fm, by, at));
+				});
+			}
 		}
 
 		new Setting(section)
@@ -206,9 +207,9 @@ export class ReviewPanelView extends ItemView {
 			return;
 		}
 
-		const rows = section.createDiv('okf-reviewer-attr-rows');
+		const rows = section.createDiv('okf-reviewer-list');
 		for (const def of defs) {
-			const row = rows.createDiv('okf-reviewer-attr-row');
+			const row = rows.createDiv('okf-reviewer-row');
 			row.createSpan({ text: def.name, cls: 'okf-reviewer-attr-name' });
 			const present = frontmatter !== undefined && def.name in frontmatter;
 			if (!present) {
@@ -226,7 +227,15 @@ export class ReviewPanelView extends ItemView {
 							),
 						);
 					});
-				add.buttonEl.addClass('okf-reviewer-icon-button');
+				add.buttonEl.addClass('okf-reviewer-icon-button', 'okf-reviewer-add-button');
+			} else {
+				const remove = new ButtonComponent(row)
+					.setIcon('trash-2')
+					.setTooltip(`Remove "${def.name}" from this document`)
+					.onClick(() => {
+						void this.plugin.applyReview((fm) => removeAttribute(fm, def.name));
+					});
+				remove.buttonEl.addClass('okf-reviewer-icon-button');
 			}
 		}
 
@@ -264,7 +273,7 @@ export class ReviewPanelView extends ItemView {
 		const active: OkfStatus | null =
 			state.status !== null && isKnownStatus(state.status) ? state.status : null;
 
-		const row = section.createDiv('okf-reviewer-status-row');
+		const row = section.createDiv('okf-reviewer-button-row');
 		for (const status of OKF_STATUSES) {
 			const isActive = status === active;
 			const button = new ButtonComponent(row)
@@ -273,12 +282,15 @@ export class ReviewPanelView extends ItemView {
 				.onClick(() => {
 					void this.plugin.applyReview((fm) => setStatus(fm, status));
 				});
-			if (isActive) button.buttonEl.addClass('okf-reviewer-status-active');
+			button.buttonEl.addClass('okf-reviewer-choice');
+			if (isActive) {
+				button.buttonEl.addClass('okf-reviewer-status-active', `okf-reviewer-status-${status}`);
+			}
 		}
 
 		if (state.status !== null) {
 			const clear = new ButtonComponent(row)
-				.setIcon('trash-2')
+				.setIcon('eraser')
 				.setTooltip('Clear status');
 			clear.buttonEl.addClass('okf-reviewer-icon-button');
 			clear.onClick(() => {
@@ -296,7 +308,7 @@ export class ReviewPanelView extends ItemView {
 		const stale = state.staleAfter;
 		const prefill = isValidStaleDate(stale) ? stale : '';
 		new Setting(section)
-			.setDesc('A past date means the document is due for review. Or pick a preset below.')
+			.setDesc('Once this date passes, the document is due for review. Pick a date, or set it a number of days from today.')
 			.addText((text) => {
 				text.inputEl.type = 'date'; // native date picker; its value is already YYYY-MM-DD
 				return text.setValue(prefill).onChange((value) => {
@@ -320,7 +332,7 @@ export class ReviewPanelView extends ItemView {
 				button.buttonEl.addClass('okf-reviewer-icon-button');
 			});
 
-		const presets = section.createDiv('okf-reviewer-pill-row');
+		const presets = section.createDiv('okf-reviewer-button-row');
 		for (const days of [30, 90, 180, 365]) {
 			const preset = new ButtonComponent(presets)
 				.setButtonText(`${days}d`)
@@ -328,7 +340,7 @@ export class ReviewPanelView extends ItemView {
 				.onClick(() => {
 					void this.plugin.applyReview((fm) => setStaleAfter(fm, addDaysIso(days)));
 				});
-			preset.buttonEl.addClass('okf-reviewer-pill');
+			preset.buttonEl.addClass('okf-reviewer-choice');
 		}
 	}
 }

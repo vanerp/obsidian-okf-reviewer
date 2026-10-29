@@ -101,3 +101,14 @@ export function applyAttributes(
 	}
 	return { added };
 }
+
+/**
+ * Delete one attribute key from the frontmatter, whatever its value.
+ * Case-sensitive key match; a missing key is a no-op. Mutates `fm` in place
+ * and returns whether a key was removed.
+ */
+export function removeAttribute(fm: Record<string, unknown>, name: string): boolean {
+	if (!(name in fm)) return false;
+	delete fm[name];
+	return true;
+}

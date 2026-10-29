@@ -12,7 +12,7 @@ An Obsidian plugin that adds a review side panel for [OKF](https://okfn.org/) (O
 - Each verification event can be individually revoked; the `verified` key is removed entirely once the last event is gone.
 - **Status** control sets/clears `draft`, `stable`, or `deprecated`.
 - **Stale after** control sets an absolute date via a native date picker, or via 30/90/180/365-day presets, or clears it.
-- **Frontmatter attributes** (below the review sections, available for *any* open note) lists the attributes configured in settings: each missing attribute has a right-aligned **+** button to add just that one, and an **Add all** button below the list appends every configured-but-missing key with its default value — existing keys are never overwritten, repeated clicks are no-ops.
+- **Frontmatter attributes** (below the review sections, available for *any* open note) lists the attributes configured in settings: each missing attribute has a right-aligned **+** button to add just that one, each present attribute a trash button to remove it from the note, and an **Add all** button below the list appends every configured-but-missing key with its default value — existing keys are never overwritten, repeated clicks are no-ops.
 - All edits are written immediately via Obsidian's `processFrontMatter`; a failed write shows a Notice and the panel reverts to the persisted state — body text and unrelated frontmatter keys are never touched.
 
 ### File explorer markers

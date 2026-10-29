@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	applyAttributes,
 	normalizeDefinitions,
+	removeAttribute,
 	validateDefinition,
 	valueFromDefault,
 	type AttributeDefinition,
@@ -185,5 +186,19 @@ describe('applyAttributes', () => {
 		]);
 		expect(fm).toEqual({ reviewer_team: 'unassigned' });
 		expect(result.added).toEqual(['reviewer_team']);
+	});
+});
+
+describe('removeAttribute', () => {
+	it('deletes the key whatever its value, leaving other keys untouched', () => {
+		const fm: Record<string, unknown> = { type: 'Concept', priority: null, team: 'a' };
+		expect(removeAttribute(fm, 'priority')).toBe(true);
+		expect(fm).toEqual({ type: 'Concept', team: 'a' });
+	});
+
+	it('is a case-sensitive no-op when the key is absent', () => {
+		const fm: Record<string, unknown> = { Priority: 'high' };
+		expect(removeAttribute(fm, 'priority')).toBe(false);
+		expect(fm).toEqual({ Priority: 'high' });
 	});
 });

@@ -38,8 +38,7 @@
 	flex-wrap: wrap;
 	gap: 6px;
 	align-items: center;
-	padding: 10px 12px;
-	border-bottom: 1px solid var(--background-modifier-border);
+	padding: 10px 12px 16px;
 }
 
 .okf-reviewer-panel .okf-reviewer-header span {
@@ -74,11 +73,12 @@
 }
 
 .okf-reviewer-panel .okf-reviewer-section {
-	padding: 10px 12px;
+	padding: 16px 12px;
 	border-top: 1px solid var(--background-modifier-border);
 }
 
-.okf-reviewer-panel .okf-reviewer-section:first-of-type {
+.okf-reviewer-panel > .okf-reviewer-section:first-child,
+.okf-reviewer-panel > .okf-reviewer-inactive + .okf-reviewer-section {
 	border-top: none;
 }
 
@@ -130,44 +130,56 @@
 	justify-content: flex-start;
 }
 
-.okf-reviewer-panel .setting-item-control input[type='text'],
-.okf-reviewer-panel .setting-item-control input[type='date'] {
+.okf-reviewer-panel .setting-item-control input[type='text'] {
 	width: 100%;
 	max-width: 160px;
 }
 
-.okf-reviewer-panel .okf-reviewer-status-row {
+/* Stale-after date fills the row; only the eraser button sits beside it. */
+.okf-reviewer-panel .setting-item-control input[type='date'] {
+	flex: 1 1 auto;
+	width: auto;
+	min-width: 0;
+}
+
+.okf-reviewer-panel .okf-reviewer-button-row {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
 	gap: 6px;
 }
 
-.okf-reviewer-panel .okf-reviewer-pill-row {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 4px;
-	margin-top: 6px;
-}
-
-.okf-reviewer-panel .okf-reviewer-pill {
-	height: auto;
-	padding: 2px 10px;
-	border-radius: var(--radius-l, 999px);
-	font-size: var(--font-ui-smaller);
-	font-weight: 500;
-	box-shadow: none;
+/* Status and stale-after preset buttons keep Obsidian's regular button size
+   and take the theme accent on hover; the active status is disabled and
+   tinted green instead. */
+.okf-reviewer-panel .okf-reviewer-choice:not(:disabled):hover {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	cursor: pointer;
 }
 
 .okf-reviewer-panel .okf-reviewer-status-active,
 .okf-reviewer-panel .okf-reviewer-status-active:hover,
 .okf-reviewer-panel .okf-reviewer-status-active:disabled {
-	background: rgba(var(--okf-green-rgb), 0.15);
-	color: var(--okf-green);
 	box-shadow: none;
 	opacity: 1;
 	cursor: default;
+}
+
+/* Active status color: draft is blue, stable is green, deprecated is red. */
+.okf-reviewer-panel .okf-reviewer-status-draft {
+	background: rgba(var(--okf-blue-rgb), 0.15);
+	color: var(--okf-blue);
+}
+
+.okf-reviewer-panel .okf-reviewer-status-stable {
+	background: rgba(var(--okf-green-rgb), 0.15);
+	color: var(--okf-green);
+}
+
+.okf-reviewer-panel .okf-reviewer-status-deprecated {
+	background: rgba(var(--okf-red-rgb), 0.15);
+	color: var(--okf-red);
 }
 
 .okf-reviewer-panel .okf-reviewer-muted {
@@ -176,24 +188,29 @@
 	padding: 4px 0;
 }
 
-/* Verification event rows */
-.okf-reviewer-panel .okf-reviewer-events {
+/* List rows (verification events, attributes): content on the left, a
+   single icon action pinned right. */
+.okf-reviewer-panel .okf-reviewer-list {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
-	margin-bottom: 8px;
+	margin: 0 -6px 4px;
 }
 
-.okf-reviewer-panel .okf-reviewer-event {
+.okf-reviewer-panel .okf-reviewer-row {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
 	gap: 8px;
+	min-height: 28px;
 	padding: 4px 6px;
 	border-radius: var(--radius-s);
 }
 
-.okf-reviewer-panel .okf-reviewer-event:hover {
+.okf-reviewer-panel .okf-reviewer-row .okf-reviewer-icon-button {
+	margin-left: auto;
+}
+
+.okf-reviewer-panel .okf-reviewer-row:hover {
 	background: var(--background-modifier-hover);
 }
 
@@ -240,17 +257,19 @@
 	background: transparent;
 	box-shadow: none;
 	border: none;
-	padding: 2px 4px;
+	padding: 4px;
+	height: auto;
 	color: var(--text-muted);
 }
 
 .okf-reviewer-panel .okf-reviewer-icon-button:hover {
 	color: var(--text-normal);
 	background: var(--background-modifier-hover);
+	cursor: pointer;
 }
 
 .okf-reviewer-panel .okf-reviewer-inactive {
-	margin: 16px 12px;
+	margin: 10px 12px;
 	padding: 12px;
 	border-radius: var(--radius-s);
 	background: var(--background-secondary);
@@ -318,13 +337,16 @@
 	color: var(--color-accent);
 }
 
-/* Feature 004 — settings tab: attribute rows lay out as [name | inputs] with
-   the help/validation text on its own full-width line BELOW the fields.
-   `display: contents` promotes name + description out of the info wrapper so
-   the row flexbox can wrap the description under the inputs. */
+/* Feature 004 — settings tab: attribute rows are a compact [name | default
+   | delete] input row. The section description explains the fields once, so
+   rows hide their own name; the description only appears to show a
+   validation error, on its own line below the inputs. `display: contents`
+   promotes it out of the info wrapper so the row flexbox can wrap it. */
 .okf-reviewer-attr-setting {
 	flex-wrap: wrap;
 	row-gap: 4px;
+	border-top: none;
+	padding: 6px 0;
 }
 
 .okf-reviewer-attr-setting .setting-item-info {
@@ -332,24 +354,77 @@
 }
 
 .okf-reviewer-attr-setting .setting-item-name {
-	order: 1;
-	flex: 0 0 12em;
+	display: none;
 }
 
 .okf-reviewer-attr-setting .setting-item-control {
-	order: 2;
+	order: 1;
 	flex: 1 1 auto;
+	justify-content: flex-start;
 }
 
 .okf-reviewer-attr-setting .setting-item-description {
-	order: 3;
+	order: 2;
 	flex: 1 1 100%;
 	margin: 0;
+	padding: 0;
+	color: var(--text-error);
 }
 
-/* Feature 004 — settings tab: two inputs share one Setting row (name on the
-   left, default value filling the remaining space), so widths are pinned to
-   keep the pair readable across themes. */
+.okf-reviewer-attr-setting .setting-item-description:empty {
+	display: none;
+}
+
+/* The + row: its top border is the divider under the section description;
+   the button sits right-aligned, in line with the rows' delete buttons. */
+.okf-reviewer-attr-add {
+	border-top: 1px solid var(--background-modifier-border);
+	padding: 6px 0;
+}
+
+/* No divider between the + row and the first attribute row. Doubled classes
+   outrank Obsidian's group divider rules without !important. */
+/* Compact spacing around the + row: tight below the divider and above the
+   first attribute row (doubled classes outrank Obsidian's group padding). */
+.setting-item.okf-reviewer-attr-add.okf-reviewer-attr-add {
+	border-bottom: none;
+	min-height: 0;
+	padding-top: 4px;
+	padding-bottom: 0;
+}
+
+.okf-reviewer-attr-add + .setting-item.okf-reviewer-attr-setting.okf-reviewer-attr-setting {
+	padding-top: 4px;
+}
+
+.okf-reviewer-attr-add + .setting-item.okf-reviewer-attr-setting.okf-reviewer-attr-setting {
+	border-top: none;
+}
+
+.okf-reviewer-attr-add + .okf-reviewer-attr-setting::before {
+	display: none;
+}
+
+/* With no attributes, the + row is the last row and holds the hint on its
+   left, so it gets regular bottom spacing to close the section. */
+.setting-item.okf-reviewer-attr-add.okf-reviewer-attr-add-empty {
+	padding-top: 8px;
+	padding-bottom: 12px;
+}
+
+.okf-reviewer-attr-add:not(.okf-reviewer-attr-add-empty) .setting-item-info {
+	display: none;
+}
+
+.okf-reviewer-attr-add .setting-item-name {
+	display: none;
+}
+
+.okf-reviewer-attr-add .setting-item-control {
+	justify-content: flex-end;
+}
+
+/* Name has a fixed width; the default value fills the remaining space. */
 .okf-reviewer-attr-name-input {
 	width: 14em;
 }
@@ -357,27 +432,18 @@
 .okf-reviewer-attr-setting .okf-reviewer-attr-default-input {
 	flex: 1 1 auto;
 	width: auto;
-	min-width: 14em;
+	min-width: 10em;
 }
 
-/* Feature 004 — panel: configured-attribute rows show the key; rows lacking
-   the attribute carry a compact + button right-aligned to add just that one. */
-.okf-reviewer-attr-row {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 2px 0;
-}
-
-.okf-reviewer-attr-row .okf-reviewer-icon-button {
-	margin-left: auto;
-	padding: 2px 2px;
-}
-
-.okf-reviewer-attr-name {
+/* Feature 004 — panel: attribute keys in the shared list rows. */
+.okf-reviewer-panel .okf-reviewer-attr-name {
 	font-family: var(--font-monospace);
+	font-size: var(--font-ui-small);
+	color: var(--text-normal);
 }
 
-.okf-reviewer-attr-row .okf-reviewer-icon-button svg {
-	transform: translateY(-1px);
+/* The per-attribute + reads small at the default icon size; bump it a step. */
+.okf-reviewer-panel .okf-reviewer-add-button {
+	--icon-size: 20px;
+	--icon-stroke: 2px;
 }
