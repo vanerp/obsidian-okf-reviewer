@@ -12,6 +12,7 @@ An Obsidian plugin that adds a review side panel for [OKF](https://okfn.org/) (O
 - Each verification event can be individually revoked; the `verified` key is removed entirely once the last event is gone.
 - **Status** control sets/clears `draft`, `stable`, or `deprecated`.
 - **Stale after** control sets an absolute date via a native date picker, or via 30/90/180/365-day presets, or clears it.
+- **Frontmatter attributes** (below the review sections, available for *any* open note) lists the attributes configured in settings: each missing attribute has a right-aligned **+** button to add just that one, and an **Add all** button below the list appends every configured-but-missing key with its default value — existing keys are never overwritten, repeated clicks are no-ops.
 - All edits are written immediately via Obsidian's `processFrontMatter`; a failed write shows a Notice and the panel reverts to the persisted state — body text and unrelated frontmatter keys are never touched.
 
 ### File explorer markers
@@ -24,13 +25,18 @@ Each OKF document's entry in the file explorer is annotated with three independe
 
 Green/blue/red are tuned separately for light and dark themes to keep sufficient contrast in both; the status decoration inherits the entry's existing color, so it works in both themes as-is. Labels update within a second of a status change (panel edit, frontmatter edit, or external write) and are removed cleanly when the plugin is disabled.
 
+### Decoration toggle
+
+The explorer's top action bar carries an **eye toggle** for the whole decoration layer: one click hides every OKF decoration (colors, dots, `[DRAFT]` suffixes, strikethroughs) for a plain file-name view; clicking again restores them from each note's current state. The button shows Obsidian's native pressed styling while decorations are visible. The choice is remembered across restarts (`showExplorerStatus` in the plugin's data, default on) and applies to every open explorer pane.
+
 ### Settings
 
 In Settings → OKF Reviewer:
 
 - **Reviewer identity** — the `human:<id>` actor recorded as `by` on Mark verified (default `human:reviewer`).
+- **Frontmatter attributes** — an editable list of custom frontmatter attributes (name + single-line default value) that the review panel can add to the open document with one click. Names are case-sensitive frontmatter keys and must be unique; defaults are empty-allowed and JSON-typed: plain text is written as-is, while valid JSON (`3`, `true`, `null`, `[1, 2]`, `{"k": "v"}`, `"text"`) is written as that value.
 
-That's the only setting. Status and stale-after have no configurable defaults — status is a row of buttons that just reflects whatever's already set, and stale-after has its date picker plus 30/90/180/365-day preset pills right in the panel, so a settings-level default would just be one more place to look instead of one less click.
+Status and stale-after have no configurable defaults — status is a row of buttons that just reflects whatever's already set, and stale-after has its date picker plus 30/90/180/365-day preset pills right in the panel, so a settings-level default would just be one more place to look instead of one less click.
 
 ## Frontmatter contract
 
@@ -60,7 +66,7 @@ npm run lint        # eslint (eslint-plugin-obsidianmd)
 npm test         # vitest — unit tests for the pure frontmatter/marker logic
 ```
 
-`src/okf.ts` and `src/markers.ts` are plain TypeScript with no Obsidian imports, so the frontmatter mapping and file-explorer marker rules are covered by `npm test` independent of a running vault. Everything else (`main.ts`, `panel.ts`, `settings.ts`, `explorer.ts`) is Obsidian-API glue, validated manually in a live vault.
+`src/okf.ts`, `src/markers.ts`, and `src/attributes.ts` are plain TypeScript with no Obsidian imports, so the frontmatter mapping, file-explorer marker rules, and attribute write/validation semantics are covered by `npm test` independent of a running vault. Everything else (`main.ts`, `panel.ts`, `settings.ts`, `explorer.ts`) is Obsidian-API glue, validated manually in a live vault.
 
 ## License
 

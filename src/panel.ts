@@ -1,5 +1,6 @@
-import { ButtonComponent, ItemView, Notice, Setting } from 'obsidian';
+import { ButtonComponent, ItemView, Notice, Setting, type TFile } from 'obsidian';
 import type OkfReviewerPlugin from './main';
+import { applyAttributes } from './attributes';
 import {
 	addDaysIso,
 	appendVerifiedEvent,
@@ -56,21 +57,21 @@ export class ReviewPanelView extends ItemView {
 		const cache = file ? this.app.metadataCache.getFileCache(file) : null;
 		const frontmatter = cache?.frontmatter;
 
-		if (!file || !frontmatter) {
+		if (!file || !frontmatter || !isOkfDocument(frontmatter)) {
 			const broken = cache?.frontmatterPosition !== undefined;
 			this.renderInactive(contentEl, broken);
-			return;
-		}
-		if (!isOkfDocument(frontmatter)) {
-			this.renderInactive(contentEl, false);
-			return;
+		} else {
+			const state = readReviewState(frontmatter);
+			this.renderHeader(contentEl, state);
+			this.renderVerifiedSection(contentEl, state);
+			this.renderStatusControl(contentEl, state);
+			this.renderStaleAfterControl(contentEl, state);
 		}
 
-		const state = readReviewState(frontmatter);
-		this.renderHeader(contentEl, state);
-		this.renderVerifiedSection(contentEl, state);
-		this.renderStatusControl(contentEl, state);
-		this.renderStaleAfterControl(contentEl, state);
+		// Feature 004: attribute adding is available for ANY open document,
+		// including non-OKF notes and notes without frontmatter (FR-003, FR-009);
+		// review sections above keep their OKF gating (contract panel.md IR-A5).
+		this.renderAttributesSection(contentEl, file, frontmatter);
 	}
 
 	private renderInactive(contentEl: HTMLElement, broken: boolean): void {
@@ -176,6 +177,82 @@ export class ReviewPanelView extends ItemView {
 
 	private renderSectionHeading(container: HTMLElement, text: string): void {
 		container.createDiv({ cls: 'okf-reviewer-heading', text });
+	}
+
+	/**
+	 * Feature 004: list configured attributes with their presence in the
+	 * active document, and the one-click add action (FR-003). The write goes
+	 * through `applyReview` so failures surface as a Notice and the document
+	 * stays unchanged (FR-010); the live `settings.attributes` array is
+	 * captured in the handler so edits made after this render still apply.
+	 */
+	private renderAttributesSection(
+		contentEl: HTMLElement,
+		file: TFile | null,
+		frontmatter: Record<string, unknown> | undefined,
+	): void {
+		const section = contentEl.createDiv('okf-reviewer-section');
+		this.renderSectionHeading(section, 'Frontmatter attributes');
+
+		const defs = this.plugin.settings.attributes.filter(
+			(def) => def.name.trim().length > 0,
+		);
+		if (defs.length === 0) {
+			section
+				.createDiv('okf-reviewer-muted')
+				.setText(
+					'No attributes configured. Define them in the plugin settings.',
+				);
+			return;
+		}
+
+		const rows = section.createDiv('okf-reviewer-attr-rows');
+		for (const def of defs) {
+			const row = rows.createDiv('okf-reviewer-attr-row');
+			row.createSpan({ text: def.name, cls: 'okf-reviewer-attr-name' });
+			const present = frontmatter !== undefined && def.name in frontmatter;
+			if (!present) {
+				// Per-attribute add: matched by identity against the live settings
+				// array, so a definition deleted in settings after this render
+				// turns the click into a no-op instead of writing stale state.
+				const add = new ButtonComponent(row)
+					.setIcon('plus')
+					.setTooltip(`Add "${def.name}" only`)
+					.onClick(() => {
+						void this.plugin.applyReview((fm) =>
+							applyAttributes(
+								fm,
+								this.plugin.settings.attributes.filter((d) => d === def),
+							),
+						);
+					});
+				add.buttonEl.addClass('okf-reviewer-icon-button');
+			}
+		}
+
+		const missing = defs.filter(
+			(def) => frontmatter === undefined || !(def.name in frontmatter),
+		);
+		const nothingToAdd = !file || missing.length === 0;
+		new Setting(section)
+			.setDesc(
+				!file
+					? 'No active document.'
+					: missing.length === 0
+						? 'All configured attributes are already present.'
+						: `Will add ${missing.length} missing attribute${missing.length === 1 ? '' : 's'} with their default values.`,
+			)
+			.addButton((button) =>
+				button
+					.setButtonText('Add all')
+					.setCta()
+					.setDisabled(nothingToAdd)
+					.onClick(() => {
+						void this.plugin.applyReview((fm) =>
+							applyAttributes(fm, this.plugin.settings.attributes),
+						);
+					}),
+			);
 	}
 
 	private renderStatusControl(

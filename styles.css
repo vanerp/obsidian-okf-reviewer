@@ -310,3 +310,74 @@
 	opacity: 0.6;
 	margin-left: 4px;
 }
+
+/* Explorer action-bar toggle: `is-active` marks decorations-visible. Some
+   themes don't tint nav-action-buttons when active, so give it the accent
+   color explicitly (visible in light and dark). */
+.okf-reviewer-toggle.is-active {
+	color: var(--color-accent);
+}
+
+/* Feature 004 — settings tab: attribute rows lay out as [name | inputs] with
+   the help/validation text on its own full-width line BELOW the fields.
+   `display: contents` promotes name + description out of the info wrapper so
+   the row flexbox can wrap the description under the inputs. */
+.okf-reviewer-attr-setting {
+	flex-wrap: wrap;
+	row-gap: 4px;
+}
+
+.okf-reviewer-attr-setting .setting-item-info {
+	display: contents;
+}
+
+.okf-reviewer-attr-setting .setting-item-name {
+	order: 1;
+	flex: 0 0 12em;
+}
+
+.okf-reviewer-attr-setting .setting-item-control {
+	order: 2;
+	flex: 1 1 auto;
+}
+
+.okf-reviewer-attr-setting .setting-item-description {
+	order: 3;
+	flex: 1 1 100%;
+	margin: 0;
+}
+
+/* Feature 004 — settings tab: two inputs share one Setting row (name on the
+   left, default value filling the remaining space), so widths are pinned to
+   keep the pair readable across themes. */
+.okf-reviewer-attr-name-input {
+	width: 14em;
+}
+
+.okf-reviewer-attr-setting .okf-reviewer-attr-default-input {
+	flex: 1 1 auto;
+	width: auto;
+	min-width: 14em;
+}
+
+/* Feature 004 — panel: configured-attribute rows show the key; rows lacking
+   the attribute carry a compact + button right-aligned to add just that one. */
+.okf-reviewer-attr-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 2px 0;
+}
+
+.okf-reviewer-attr-row .okf-reviewer-icon-button {
+	margin-left: auto;
+	padding: 2px 2px;
+}
+
+.okf-reviewer-attr-name {
+	font-family: var(--font-monospace);
+}
+
+.okf-reviewer-attr-row .okf-reviewer-icon-button svg {
+	transform: translateY(-1px);
+}

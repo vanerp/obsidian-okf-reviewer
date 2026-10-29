@@ -56,7 +56,12 @@ export class ExplorerDecorator {
 		// (unrecognized string, list, missing, malformed frontmatter) stays plain.
 		const rawStatus = state?.status ?? null;
 		const status = rawStatus !== null && isKnownStatus(rawStatus) ? rawStatus : null;
-		const appearance = computeExplorerAppearance(origin, tier, stale, status);
+		// Visibility gate (feature 003): while hidden, every refresh pass
+		// strips all decoration — the remove-then-apply steps below run with a
+		// zeroed appearance, so the end state always matches the toggle.
+		const appearance = this.plugin.settings.showExplorerStatus
+			? computeExplorerAppearance(origin, tier, stale, status)
+			: { textModifier: null, dot: null, statusSuffix: null, statusStrike: false };
 
 		for (const titleEl of this.titleElements(file.path)) {
 			titleEl.querySelector(`.${DOT_CLASS}`)?.remove();

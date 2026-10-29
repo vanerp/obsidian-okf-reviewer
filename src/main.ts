@@ -1,5 +1,6 @@
 import { Notice, Plugin, type TFile, type WorkspaceLeaf } from 'obsidian';
 import { ExplorerDecorator } from './explorer';
+import { ExplorerStatusToggle } from './explorer-toggle';
 import { isOkfDocument } from './okf';
 import { ReviewPanelView, VIEW_TYPE_OKF_REVIEWER } from './panel';
 import {
@@ -7,10 +8,12 @@ import {
 	ReviewerSettingTab,
 	type ReviewerSettings,
 } from './settings';
+import { normalizeDefinitions } from './attributes';
 
 export default class OkfReviewerPlugin extends Plugin {
 	settings: ReviewerSettings = { ...DEFAULT_SETTINGS };
 	private readonly explorerDecorator = new ExplorerDecorator(this);
+	private readonly explorerToggle = new ExplorerStatusToggle(this);
 	// undefined = "never checked yet", distinct from null ("no active file"),
 	// so the very first refreshPanel call always runs once.
 	private lastActiveFilePath: string | null | undefined = undefined;
@@ -33,6 +36,7 @@ export default class OkfReviewerPlugin extends Plugin {
 		this.registerEvent(
 			this.app.workspace.on('layout-change', () => {
 				void this.refreshPanel();
+				this.explorerToggle.syncButtons();
 				this.explorerDecorator.refreshAll();
 			}),
 		);
@@ -62,12 +66,20 @@ export default class OkfReviewerPlugin extends Plugin {
 		this.app.workspace.onLayoutReady(() => {
 			this.dedupePanelLeaves();
 			void this.refreshPanel();
+			this.explorerToggle.syncButtons();
 			this.explorerDecorator.refreshAll();
 		});
 	}
 
 	onunload(): void {
 		this.explorerDecorator.removeAll();
+		this.explorerToggle.removeButtons();
+	}
+
+	/** Re-decorate every explorer entry from current state — called by the
+	 *  status toggle after a visibility flip (persist → re-derive). */
+	refreshExplorer(): void {
+		this.explorerDecorator.refreshAll();
 	}
 
 	activeFile(): TFile | null {
@@ -155,6 +167,7 @@ export default class OkfReviewerPlugin extends Plugin {
 		if (this.settings.reviewerId.trim().length === 0) {
 			this.settings.reviewerId = DEFAULT_SETTINGS.reviewerId;
 		}
+		this.settings.attributes = normalizeDefinitions(this.settings.attributes);
 	}
 
 	async saveSettings(): Promise<void> {
